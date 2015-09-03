@@ -3,7 +3,19 @@ require('dotenv').load()
 
 // create app
 var express = require('express')
+var cors = require('cors')
 var app = express()
+
+// set up cross-origin request handling
+var whitelist = JSON.parse('{"whitelist": ' + process.env.WHITELIST + '}').whitelist
+var corsOptions = {
+  origin: function (origin, callback) {
+    var originIsWhitelisted = whitelist.indexOf(origin) !== -1
+    callback(null, originIsWhitelisted)
+  }
+}
+
+app.use(cors(corsOptions))
 
 // create twitter object
 var Twitter = require('twit')
@@ -19,7 +31,7 @@ var stream = t.stream(
   'statuses/filter',
   {
     follow: process.env.USER_ID,
-    track: 'slowcore'
+    track: process.env.HASHTAG
   }
 )
 
@@ -40,11 +52,6 @@ app.get('/tweets', function (req, res) {
       res.send(data)
     }
   )
-})
-
-// delete this and use s3 instead
-app.get('/', function (req, res) {
-  res.sendFile(__dirname + '/index.html')
 })
 
 // create server
