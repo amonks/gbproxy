@@ -1,6 +1,8 @@
 # gifbooth proxy
 
-This is the gifbooth proxy server. It proxies for the [gifbooth client](https://github.com/amonks/gbclient)
+This is the gifbooth proxy server. It proxies for the [gifbooth client](https://github.com/amonks/gbclient).
+
+Issues for this software are handled in the [gifbooth client repo](https://github.com/amonks/gbclient/issues)
 
 When this repository is pushed to, it automatically builds and deploys to [heroku](gifbooth-proxy.herokuapp.com). That build process usually takes about 4 seconds.
 
