@@ -7,14 +7,9 @@ var cors = require('cors')
 var app = express()
 
 // set up cross-origin request handling
-var whitelist = JSON.parse('{"whitelist": ' + process.env.WHITELIST + '}').whitelist
 var corsOptions = {
-  origin: function (origin, callback) {
-    var originIsWhitelisted = whitelist.indexOf(origin) !== -1
-    callback(null, originIsWhitelisted)
-  }
+  origin: process.env.CLIENT
 }
-
 app.use(cors(corsOptions))
 
 // create twitter object
