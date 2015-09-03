@@ -1,6 +1,9 @@
 // load config
 require('dotenv').load()
 
+// monitoring
+require('newrelic')
+
 // create app
 var express = require('express')
 var cors = require('cors')
