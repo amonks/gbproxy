@@ -30,15 +30,6 @@ var t = new Twitter({
   access_token_secret: process.env.TOKEN_SECRET
 })
 
-// load a stream of the user's tweets
-var stream = t.stream(
-  'statuses/filter',
-  {
-    follow: process.env.USER_ID,
-    track: process.env.HASHTAG
-  }
-)
-
 // display something when '/' is requested
 app.get('/', function (req, res) {
   res.send('This is the gifbooth proxy server.')
@@ -89,11 +80,16 @@ var server = app.listen(process.env.PORT || 8080, function () {
   console.log('listening at http://%s:%s', host, port)
 })
 
+// load a stream of the user's tweets
+var stream = t.stream(
+  'statuses/filter',
+  {
+    follow: process.env.USER_ID,
+    track: process.env.HASHTAG
+  }
+)
 // proxy stream to connected clients
 var io = require('socket.io')(server)
-io.on('connection', function (socket) {
-  console.log('connection made')
-  stream.on('tweet', function (tweet) {
-    socket.emit('tweet', tweet)
-  })
+stream.on('tweet', function (tweet) {
+  io.emit('tweet', tweet)
 })
