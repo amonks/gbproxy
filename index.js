@@ -72,7 +72,7 @@ app.get('/tweets', function (req, res) {
             res.send(data)
             // cache the tweets
             redis.set('tweets', JSON.stringify(data))
-            redis.expire('tweets', 2) // seconds
+            redis.expire('tweets', process.ENV.CACHE_EXPIRE || 2) // seconds
           }
         }
       )
