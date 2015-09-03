@@ -53,7 +53,7 @@ app.get('/tweets', function (req, res) {
       console.log(err)
     }
     if (tweets) {
-      res.send(tweets)
+      res.send(JSON.stringify(tweets))
     // otherwise fetch the tweets from the twitter rest api
     } else {
       t.get(
