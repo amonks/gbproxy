@@ -4,6 +4,12 @@ require('dotenv').load()
 // monitoring
 require('newrelic')
 
+// redis cache
+var redis = require('redis').createClient(process.env.REDIS_URL)
+redis.on('error', function (err) {
+  console.log('Error ' + err)
+})
+
 // create app
 var express = require('express')
 var cors = require('cors')
@@ -40,21 +46,38 @@ app.get('/', function (req, res) {
 
 // proxy initial timeline request
 app.get('/tweets', function (req, res) {
-  t.get(
-    'statuses/user_timeline',
-    {
-      user_id: process.env.USER_ID,
-      exclude_replies: true,
-      include_rts: false,
-      trim_user: true
-    },
-    function (err, data, response) {
-      if (err) {
-        console.log(err.stack)
-      }
-      res.send(data)
+
+  // if it's cached already, send that
+  redis.get('tweets', function (err, tweets) {
+    if (err) {
+      console.log(err)
     }
-  )
+    if (tweets) {
+      res.send(tweets)
+    // otherwise fetch the tweets from the twitter rest api
+    } else {
+      t.get(
+        'statuses/user_timeline',
+        {
+          user_id: process.env.USER_ID,
+          exclude_replies: true,
+          include_rts: false,
+          trim_user: true
+        },
+        function (err, data, response) {
+          if (err) {
+            console.log(err.stack)
+          } else {
+            // send it off
+            res.send(data)
+            // cache the tweets
+            redis.set('tweets', data)
+            redis.expire('tweets', 2) // seconds
+          }
+        }
+      )
+    }
+  })
 })
 
 // create server
