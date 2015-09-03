@@ -53,7 +53,7 @@ app.get('/tweets', function (req, res) {
       console.log(err)
     }
     if (tweets) {
-      res.send(JSON.stringify(tweets))
+      res.send(JSON.parse(tweets))
     // otherwise fetch the tweets from the twitter rest api
     } else {
       t.get(
@@ -71,7 +71,7 @@ app.get('/tweets', function (req, res) {
             // send it off
             res.send(data)
             // cache the tweets
-            redis.set('tweets', data)
+            redis.set('tweets', JSON.stringify(data))
             redis.expire('tweets', 2) // seconds
           }
         }
