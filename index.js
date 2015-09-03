@@ -46,7 +46,7 @@ app.get('/', function (req, res) {
 
 // proxy initial timeline request
 app.get('/tweets', function (req, res) {
-
+  // redis.del('tweets', redis.print)
   // if it's cached already, send that
   redis.get('tweets', function (err, tweets) {
     if (err) {
@@ -56,6 +56,7 @@ app.get('/tweets', function (req, res) {
       res.send(JSON.parse(tweets))
     // otherwise fetch the tweets from the twitter rest api
     } else {
+      console.log('fetching tweets')
       t.get(
         'statuses/user_timeline',
         {
@@ -72,7 +73,7 @@ app.get('/tweets', function (req, res) {
             res.send(data)
             // cache the tweets
             redis.set('tweets', JSON.stringify(data))
-            redis.expire('tweets', process.ENV.CACHE_EXPIRE || 2) // seconds
+            redis.expire('tweets', parseInt(process.env.REDIS_EXPIRE, 10) || 10) // seconds
           }
         }
       )
