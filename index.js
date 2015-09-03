@@ -30,6 +30,11 @@ var stream = t.stream(
   }
 )
 
+// display something when '/' is requested
+app.get('/', function (req, res) {
+  res.send('This is the gifbooth proxy server.')
+})
+
 // proxy initial timeline request
 app.get('/tweets', function (req, res) {
   t.get(

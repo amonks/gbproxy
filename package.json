@@ -5,6 +5,9 @@
   "scripts": {
     "start": "node index.js"
   },
+  "engines": {
+    "iojs": "3.3.x"
+  },
   "dependencies": {
     "cors": "^2.7.1",
     "dotenv": "^1.2.0",
