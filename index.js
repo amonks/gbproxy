@@ -82,36 +82,38 @@ app.post('/email', function (req, res) {
 // proxy initial timeline request
 app.get('/tweets', function (req, res) {
   var send = function (data) { res.send(data) }
-  cacheGet('tweets', getTimeline, undefined).then(send).catch(console.log)
+  var timelineParams = {key: req.url}
+  cacheGet('tweets', getTimeline, timelineParams).then(send).catch(console.log)
 })
 
 app.get('/tweets/:maxID', function (req, res) {
   var send = function (data) { res.send(data) }
   var maxID = req.params.maxID - 1
-  cacheGet('tweets/' + maxID, getTimeline, maxID).then(send).catch(console.log)
+  var timelineParams = {maxID: maxID, key: req.url}
+  cacheGet(req.url, getTimeline, timelineParams).then(send).catch(console.log)
 })
 
-var getTimeline = function (maxID) {
+var getTimeline = function (params) {
   return new Promise(function (resolve, reject) {
-    var params = {
+    var requestParams = {
       user_id: process.env.USER_ID,
       exclude_replies: true,
       include_rts: false,
       trim_user: true
     }
-    if (typeof maxID !== 'undefined') {
-      params.max_id = maxID
+    if (typeof params.maxID !== 'undefined') {
+      requestParams.max_id = params.maxID
     }
     t.get(
       'statuses/user_timeline',
-      params,
+      requestParams,
       function (err, data, response) {
         if (err) {
           reject(err)
         } else {
           // cache the tweets
-          redis.set('tweets', JSON.stringify(data))
-          redis.expire('tweets', parseInt(process.env.REDIS_EXPIRE, 10) || 10) // seconds{
+          redis.set(params.key, JSON.stringify(data))
+          redis.expire(params.key, parseInt(process.env.REDIS_EXPIRE, 10) || 10) // seconds{
           // send it off
           resolve(data)
         }
