@@ -81,40 +81,62 @@ app.post('/email', function (req, res) {
 
 // proxy initial timeline request
 app.get('/tweets', function (req, res) {
-
-  // if it's cached already, send that
-  redis.get('tweets', function (err, tweets) {
-    if (err) {
-      console.log(err)
-    }
-    if (tweets) {
-      res.send(JSON.parse(tweets))
-
-    // otherwise fetch the tweets from the twitter rest api
-    } else {
-      t.get(
-        'statuses/user_timeline',
-        {
-          user_id: process.env.USER_ID,
-          exclude_replies: true,
-          include_rts: false,
-          trim_user: true
-        },
-        function (err, data, response) {
-          if (err) {
-            console.log(err.stack)
-          } else {
-            // send it off
-            res.send(data)
-            // cache the tweets
-            redis.set('tweets', JSON.stringify(data))
-            redis.expire('tweets', parseInt(process.env.REDIS_EXPIRE, 10) || 10) // seconds
-          }
-        }
-      )
-    }
-  })
+  var send = function (data) { res.send(data) }
+  cacheGet('tweets', getTimeline, undefined).then(send).catch(console.log)
 })
+
+app.get('/tweets/:maxID', function (req, res) {
+  var send = function (data) { res.send(data) }
+  var maxID = req.params.maxID - 1
+  cacheGet('tweets/' + maxID, getTimeline, maxID).then(send).catch(console.log)
+})
+
+var getTimeline = function (maxID) {
+  return new Promise(function (resolve, reject) {
+    var params = {
+      user_id: process.env.USER_ID,
+      exclude_replies: true,
+      include_rts: false,
+      trim_user: true
+    }
+    if (typeof maxID !== 'undefined') {
+      params.max_id = maxID
+    }
+    t.get(
+      'statuses/user_timeline',
+      params,
+      function (err, data, response) {
+        if (err) {
+          reject(err)
+        } else {
+          // cache the tweets
+          redis.set('tweets', JSON.stringify(data))
+          redis.expire('tweets', parseInt(process.env.REDIS_EXPIRE, 10) || 10) // seconds{
+          // send it off
+          resolve(data)
+        }
+      }
+    )
+  })
+}
+
+var cacheGet = function (key, cb, params) {
+  return new Promise(function (resolve, reject) {
+    // if it's cached already, send that
+    redis.get(key, function (err, cached) {
+      if (err) {
+        console.log('cache fail', err)
+        reject('cache fail', err)
+      }
+      if (cached) {
+        resolve(JSON.parse(cached))
+      } else {
+        // not cached
+        cb(params).then(resolve)
+      }
+    })
+  })
+}
 
 // create server
 var server = app.listen(process.env.PORT || 8080, function () {
@@ -162,14 +184,12 @@ stream.on('tweet', function (tweet) {
         var output = path.join(__dirname, 'tmp/' + tweet.id_str + '.gif')
         var gif = fs.createWriteStream(output)
         gifify('tmp/' + tweet.id_str + '.mp4', {}).pipe(gif).on('finish', function () {
-
           // read the converted gif
           console.log('TESTING; gonna read the converted gif')
           fs.readFile('tmp/' + tweet.id_str + '.gif', function (err, fileContents) {
             if (err) {
               console.log('error reading file', file, err)
             } else {
-
               // and upload it to s3
               console.log('TESTING; gonna put it in a bucket')
               var params = {
