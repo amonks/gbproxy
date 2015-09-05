@@ -139,8 +139,8 @@ stream.on('tweet', function (tweet) {
   io.emit('tweet', tweet)
 
   // if testing, upload streamed tweets to s3 as gifs
-  console.log('TESTING; gonna upload this one to s3')
   if (process.env.S3_TEST === 'true') {
+    console.log('TESTING; gonna upload this one to s3')
     var https = require('https')
     var gifify = require('gifify')
     var aws = require('aws-sdk')
