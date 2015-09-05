@@ -88,7 +88,7 @@ app.get('/tweets', function (req, res) {
 
 app.get('/tweets/:maxID', function (req, res) {
   var send = function (data) { res.send(data) }
-  var maxID = req.params.maxID - 1
+  var maxID = req.params.maxID
   var timelineParams = {maxID: maxID, key: req.url}
   cacheGet(req.url, getTimeline, timelineParams).then(send).catch(console.log)
 })
