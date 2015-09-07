@@ -92,7 +92,7 @@ var postAsTweet = function (req, res) {
       }).then(function (result) {
         res.redirect(process.env.CLIENT)
       })
-    }).catch(function (err) {console.log('error!', err)})
+    }).catch(function (err) { console.log('error!', err) })
   })
 }
 
