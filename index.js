@@ -28,14 +28,14 @@ var grant = new Grant({
     'transport': 'session'
   },
   'twitter': {
-    'key': process.env.CONSUMER_KEY,
-    'secret': process.env.CONSUMER_SECRET,
+    'key': process.env.TWITTER_CONSUMER_KEY,
+    'secret': process.env.TWITTER_CONSUMER_SECRET,
     'callback': '/twitter/callback'
   },
   'facebook': {
-    'key': process.env.FACEBOOK_CONSUMER_KEY,
-    'secret': process.env.FACEBOOK_CONSUMER_SECRET,
-    'scope': ['user_groups'],
+    'key': process.env.FACEBOOK_KEY,
+    'secret': process.env.FACEBOOK_SECRET,
+    'scope': ['publish_actions'],
     'callback': '/facebook/callback'
   }
 })
@@ -48,8 +48,8 @@ var corsOptions = {
 }
 app.use(cors(corsOptions))
 
-var postAsTweet = function (req, res) {
-  var oauth = makeOauth(req)
+var shareTwitter = function (req, res) {
+  var oauth = makeTwitterOauth(req)
   var up = require('./upload_twitter')
   var filename = req.session.tweet_id + '.mp4'
   up.uploadURL(oauth, req.session.mp4_url, filename)
@@ -65,27 +65,44 @@ var postAsTweet = function (req, res) {
     .catch(console.log)
 }
 
-var makeOauth = function (req) {
+var shareFacebook = function (req, res) {
+  var oauth = makeFacebookOauth(req)
+  res.send(oauth)
+}
+
+var makeFacebookOauth = function (req) {
   return {
-    consumer_key: process.env.CONSUMER_KEY,
-    consumer_secret: process.env.CONSUMER_SECRET,
+    consumer_key: process.env.TWITTER_CONSUMER_KEY,
+    consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+    token: req.session.grant.response.access_token
+  }
+}
+
+var makeTwitterOauth = function (req) {
+  return {
+    consumer_key: process.env.TWITTER_CONSUMER_KEY,
+    consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
     token: req.session.grant.response.access_token,
     token_secret: req.session.grant.response.access_secret,
     verifier: req.session.grant.step1.oauth_token
   }
 }
 
-app.get('/post-as-tweet', function (req, res) {
-  req.session.goal = 'post-as-tweet'
+app.get('/share/facebook', function (req, res) {
+  req.session.mp4_url = req.query.mp4_url
+  req.session.tweet_id = req.query.tweet_id
+  req.session.text = req.query.text
+  res.redirect('/connect/facebook')
+})
+app.get('/facebook/callback', shareFacebook)
+
+app.get('/share/twitter', function (req, res) {
   req.session.mp4_url = req.query.mp4_url
   req.session.tweet_id = req.query.tweet_id
   req.session.text = req.query.text
   res.redirect('/connect/twitter')
 })
-
-app.get('/twitter/callback', function (req, res) {
-  postAsTweet(req, res)
-})
+app.get('/twitter/callback', shareTwitter)
 
 // display something when '/' is requested
 app.get('/', function (req, res) {
@@ -93,7 +110,7 @@ app.get('/', function (req, res) {
 })
 
 // email gifs using mandrill
-app.post('/email', function (req, res) {
+app.post('/share/email', function (req, res) {
   email.send({
     gif_url: req.query.gif_url,
     to_email: req.query.to_email,

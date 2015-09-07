@@ -19,7 +19,6 @@
     "grant-express": "^3.5.0",
     "mandrill-api": "^1.0.45",
     "newrelic": "^1.22.0",
-    "node-twitter-api": "^1.6.0",
     "redis": "^1.0.0",
     "request": "^2.61.0",
     "s3-upload-stream": "^1.0.7",
