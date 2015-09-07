@@ -4,10 +4,14 @@ require('dotenv').load()
 // monitoring
 require('newrelic')
 
+var request = require('request')
+var fs = require('fs')
+var del = require('del')
+
 // redis cache
 var redis = require('redis').createClient(process.env.REDIS_URL)
 redis.on('error', function (err) {
-  console.log('Error ' + err)
+  console.log('\n\n\nRedis Error ' + err)
 })
 
 // email
@@ -16,8 +20,15 @@ var mandrill_client = new mandrill.Mandrill(process.env.MANDRILL_KEY)
 
 // create app
 var express = require('express')
+var session = require('express-session')
 var cors = require('cors')
 var app = express()
+
+var sessionOptions = {
+  secret: 'powerful ox',
+  cookie: { maxAge: 60000 }
+}
+app.use(session(sessionOptions))
 
 // set up cross-origin request handling
 var corsOptions = {
@@ -34,14 +45,100 @@ var t = new Twitter({
   access_token_secret: process.env.TOKEN_SECRET
 })
 
+var UserTwitter = require('node-twitter-api')
+var tu = new UserTwitter({
+  consumerKey: process.env.CONSUMER_KEY,
+  consumerSecret: process.env.CONSUMER_SECRET,
+  callback: 'http://amonks.ngrok.io/authorized-twitter'
+})
+
+var authorizeTwitter = function (req, res) {
+  console.log('\n\n\nauthorizing twitter', req.session)
+  tu.getRequestToken(function (err, requestToken, requestTokenSecret, results) {
+    if (err) {
+      console.log(err)
+    } else {
+      // get access token
+      req.session.twitterRequestToken = requestToken
+      req.session.twitterRequestTokenSecret = requestTokenSecret
+      res.redirect(tu.getAuthUrl(requestToken))
+    }
+  })
+}
+
+var postAsTweet = function (req, res) {
+  // upload media
+  var localFileName = __dirname + '/tmp/' + req.session.tweet_id + '-tweeting.mp4'
+  del.sync(localFileName)
+  var r = request(req.session.mp4_url)
+  r.on('error', function (err) {
+    console.log('error downloading media', err)
+  })
+  r.pipe(fs.createWriteStream(localFileName))
+  .on('finish', function () {
+    var oauth = {
+      consumer_key: process.env.CONSUMER_KEY,
+      consumer_secret: process.env.CONSUMER_SECRET,
+      token: req.session.twitterAccessToken,
+      token_secret: req.session.twitterAccessTokenSecret,
+      verifier: req.session.twitterOauthVerifier
+    }
+    var up = require('./upload_twitter')
+    up.upload(oauth, localFileName).then(function (result) {
+      var postTwitter = require('./post_twitter')
+      postTwitter.post(oauth, {
+        'status': req.session.text,
+        'media_ids': result
+      }).then(function (result) {
+        res.redirect(process.env.CLIENT)
+      })
+    }).catch(function (err) {console.log('error!', err)})
+  })
+}
+
+app.get('/post-as-tweet', function (req, res) {
+  req.session.goal = 'post-as-tweet'
+  req.session.mp4_url = req.query.mp4_url
+  req.session.tweet_id = req.query.tweet_id
+  req.session.text = req.query.text
+  console.log('\n\n\nposting as tweet', req.session)
+  authorizeTwitter(req, res)
+})
+
+app.get('/authorized-twitter', function (req, res) {
+  var requestToken = req.session.twitterRequestToken
+  var requestTokenSecret = req.session.twitterRequestTokenSecret
+  var oauth_verifier = req.session.twitterOauthVerifier = req.query.oauth_verifier
+  req.query.twitterOauthToken = req.query.oauth_token
+
+  tu.getAccessToken(
+    requestToken, requestTokenSecret, oauth_verifier,
+    function (err, accessToken, accessTokenSecret, results) {
+      if (err) {
+        console.log('\n\n\nerror getting access token', err)
+      } else {
+        req.session.twitterAccessToken = accessToken
+        req.session.twitterAccessTokenSecret = accessTokenSecret
+        tu.verifyCredentials(req.session.twitterAccessToken, req.session.twitterAccessTokenSecret, function (err, dat, response) {
+          if (err) {
+            console.log(err)
+          }
+          if (req.session.goal === 'post-as-tweet') {
+            postAsTweet(req, res)
+          }
+        })
+      }
+    }
+  )
+})
+
 // display something when '/' is requested
 app.get('/', function (req, res) {
-  res.send('This is the gifbooth proxy server.')
+  req.redirect(process.env.CLIENT)
 })
 
 // email gifs using mandrill
 app.post('/email', function (req, res) {
-  console.log(req.query)
   mandrill_client.messages.sendTemplate({
     'template_name': 'share-gif',
     'template_content': [{}],
@@ -49,7 +146,7 @@ app.post('/email', function (req, res) {
       'global_merge_vars': [
         {
           'name': 'from_name',
-          'content': req.query.from_name
+          'content': 'Gif Booth'
         },
         {
           'name': 'gif_url',
@@ -63,18 +160,17 @@ app.post('/email', function (req, res) {
         }
       ],
       'subject': 'Gifbooth Gif!',
-      'from_email': req.query.from_email,
-      'from_name': req.query.from_name,
+      'from_email': 'gifs@gifbooth.co',
+      'from_name': 'Gif Booth',
       'to': [{
         'email': req.query.to_email,
         'name': req.query.to_name
       }]
     }
   }, function (result) {
-    console.log('sent an email to ', req.query.to_email)
-    console.log(result)
+    res.send('sent')
   }, function (err) {
-    console.log(err)
+    console.log('\n\n\nerror sending email:', err)
   })
   res.send('email sent')
 })
@@ -127,7 +223,7 @@ var cacheGet = function (key, cb, params) {
     // if it's cached already, send that
     redis.get(key, function (err, cached) {
       if (err) {
-        console.log('cache fail', err)
+        console.log('\n\n\ncache fail', err)
         reject('cache fail', err)
       }
       if (cached) {
@@ -145,7 +241,7 @@ var server = app.listen(process.env.PORT || 8080, function () {
   var host = server.address().address
   var port = server.address().port
 
-  console.log('listening at http://%s:%s', host, port)
+  console.log('\n\n\nlistening at http://%s:%s', host, port)
 })
 
 // load a stream of the user's tweets
@@ -159,12 +255,11 @@ var stream = t.stream(
 // proxy stream to connected clients
 var io = require('socket.io')(server)
 stream.on('tweet', function (tweet) {
-  console.log('got a tweet!')
   io.emit('tweet', tweet)
 
   // if testing, upload streamed tweets to s3 as gifs
   if (process.env.S3_TEST === 'true') {
-    console.log('TESTING; gonna upload this one to s3')
+    console.log('\n\n\nTESTING; gonna upload this one to s3')
     var https = require('https')
     var gifify = require('gifify')
     var aws = require('aws-sdk')
@@ -172,28 +267,28 @@ stream.on('tweet', function (tweet) {
     var fs = require('fs')
 
     // download the mp4 from twitter
-    console.log('TESTING; gonna download the mp4 from twitter')
+    console.log('\n\n\nTESTING; gonna download the mp4 from twitter')
     https.get(tweet.extended_entities.media[0].video_info.variants[0].url, function (res, err) {
       if (err) {
-        console.log('https get error', err)
+        console.log('\n\n\nhttps get error', err)
       }
       var file = fs.createWriteStream('tmp/' + tweet.id_str + '.mp4')
       res.pipe(file)
 
       // convert the mp4 to a gif
-      console.log('TESTING; gonna convert the mp4 to a gif')
+      console.log('\n\n\nTESTING; gonna convert the mp4 to a gif')
       res.on('end', function () {
         var output = path.join(__dirname, 'tmp/' + tweet.id_str + '.gif')
         var gif = fs.createWriteStream(output)
         gifify('tmp/' + tweet.id_str + '.mp4', {}).pipe(gif).on('finish', function () {
           // read the converted gif
-          console.log('TESTING; gonna read the converted gif')
+          console.log('\n\n\nTESTING; gonna read the converted gif')
           fs.readFile('tmp/' + tweet.id_str + '.gif', function (err, fileContents) {
             if (err) {
-              console.log('error reading file', file, err)
+              console.log('\n\n\nerror reading file', file, err)
             } else {
               // and upload it to s3
-              console.log('TESTING; gonna put it in a bucket')
+              console.log('\n\n\nTESTING; gonna put it in a bucket')
               var params = {
                 'Bucket': process.env.AWS_S3_BUCKET,
                 'Key': tweet.id_str + '.gif',
@@ -202,9 +297,9 @@ stream.on('tweet', function (tweet) {
               }
               new aws.S3().upload(params, function (err, data) {
                 if (err) {
-                  console.log('Error uploading data:', err)
+                  console.log('\n\n\nError uploading data:', err)
                 } else {
-                  console.log('Successfully uploaded data to myBucket/myKey')
+                  console.log('\n\n\nSuccessfully uploaded data to myBucket/myKey')
                 }
               })
             }
