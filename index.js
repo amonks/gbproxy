@@ -94,14 +94,17 @@ app.get('/', function (req, res) {
 
 // email gifs using mandrill
 app.post('/email', function (req, res) {
-  console.log(req)
   email.send({
     gif_url: req.query.gif_url,
     to_email: req.query.to_email,
     to_name: req.query.to_name
   })
-  .then(res.send)
-  .catch(res.send)
+  .then(function () {
+    res.send('sent')
+  })
+  .catch(function (err) {
+    res.send('error!' + err)
+  })
 })
 
 // proxy initial timeline request
@@ -113,17 +116,17 @@ app.get('/tweets', function (req, res) {
 })
 
 app.get('/tweets/:max_id', function (req, res) {
-  // var send = function (data) { res.send(data) }
+  var send = function (data) { res.send(data) }
   proxy_twitter.getTimeline(req.params.max_id)
-  .then(res.send)
+  .then(send)
   .catch(console.log)
 })
 
 // proxy initial timeline request
 app.get('/tweet/:tweet_id', function (req, res) {
-  // var send = function (data) { res.send(data) }
+  var send = function (data) { res.send(data) }
   proxy_twitter.getTimeline(req.params.tweet_id)
-  .then(res.send)
+  .then(send)
   .catch(console.log)
 })
 
