@@ -38,6 +38,7 @@ var S3Backup = function () {
                 var params = {
                   'Bucket': process.env.AWS_S3_BUCKET,
                   'Key': tweet.id_str + '.gif',
+                  'ContentType': 'image/gif',
                   'Body': fileContents,
                   'ACL': 'public-read'
                 }

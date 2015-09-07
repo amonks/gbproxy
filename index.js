@@ -62,20 +62,25 @@ var shareTwitter = function (req, res) {
         ui.alert(res, 'tweet posted', 'success')
       })
     })
-    .catch(console.log)
+    .catch(function (err) {
+      ui.alert(res, 'error posting tweet: ' + err, 'danger')
+    })
 }
 
 var shareFacebook = function (req, res) {
   var oauth = makeFacebookOauth(req)
-  res.send(oauth)
+  var post = require('./post_fb')
+  var gif_url = req.session.gif_url
+  post.post(oauth, gif_url).then(function (out) {
+    ui.alert(res, 'status posted', 'success')
+  })
+  .catch(function (err) {
+    ui.alert(res, 'error posting to facebook: ' + JSON.stringify(err), 'danger')
+  })
 }
 
 var makeFacebookOauth = function (req) {
-  return {
-    consumer_key: process.env.TWITTER_CONSUMER_KEY,
-    consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-    token: req.session.grant.response.access_token
-  }
+  return req.session.grant.response.access_token
 }
 
 var makeTwitterOauth = function (req) {
@@ -89,9 +94,7 @@ var makeTwitterOauth = function (req) {
 }
 
 app.get('/share/facebook', function (req, res) {
-  req.session.mp4_url = req.query.mp4_url
-  req.session.tweet_id = req.query.tweet_id
-  req.session.text = req.query.text
+  req.session.gif_url = req.query.gif_url
   res.redirect('/connect/facebook')
 })
 app.get('/facebook/callback', shareFacebook)
