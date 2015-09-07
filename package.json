@@ -16,6 +16,7 @@
     "express": "^4.13.3",
     "express-session": "^1.11.3",
     "gifify": "^2.1.4",
+    "grant-express": "^3.5.0",
     "mandrill-api": "^1.0.45",
     "newrelic": "^1.22.0",
     "node-twitter-api": "^1.6.0",

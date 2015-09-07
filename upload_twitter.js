@@ -1,15 +1,33 @@
 var UploadTwitter = function () {
   var request = require('request')
   var fs = require('fs')
+  var del = require('del')
 
   var API = {}
+
+  API.uploadURL = function (oauth, url, filename) {
+    return new Promise(function (resolve, reject) {
+      // first download
+      var localFileName = __dirname + '/tmp/' + filename
+      del.sync(localFileName)
+      var r = request(url)
+      r.on('error', function (err) {
+        console.log('error downloading media', err)
+      })
+      r.pipe(fs.createWriteStream(localFileName))
+        .on('finish', function () {
+          // then when done downloading, upload
+          API.upload(oauth, localFileName)
+            .then(resolve)
+            .catch(function (err) { console.log('error!', err) })
+        })
+    })
+  }
 
   API.upload = function (oauth, path) {
     return new Promise(function (resolve, reject) {
       var u = init(oauth, path)
-      u.then(function (result) {
-        resolve(result)
-      })
+      u.then(resolve)
       u.catch(console.log)
     })
   }
