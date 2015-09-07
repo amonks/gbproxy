@@ -49,7 +49,7 @@ var UserTwitter = require('node-twitter-api')
 var tu = new UserTwitter({
   consumerKey: process.env.CONSUMER_KEY,
   consumerSecret: process.env.CONSUMER_SECRET,
-  callback: 'http://amonks.ngrok.io/authorized-twitter'
+  callback: process.env.HOST + '/authorized-twitter'
 })
 
 var authorizeTwitter = function (req, res) {
