@@ -8,6 +8,8 @@ var request = require('request')
 var fs = require('fs')
 var del = require('del')
 
+var ui = require('./ui')
+
 // redis cache
 var redis = require('redis').createClient(process.env.REDIS_URL)
 redis.on('error', function (err) {
@@ -90,7 +92,7 @@ var postAsTweet = function (req, res) {
         'status': req.session.text,
         'media_ids': result
       }).then(function (result) {
-        res.redirect(process.env.CLIENT)
+        ui.alert(res, 'tweet posted', 'success')
       })
     }).catch(function (err) { console.log('error!', err) })
   })
@@ -172,7 +174,6 @@ app.post('/email', function (req, res) {
   }, function (err) {
     console.log('\n\n\nerror sending email:', err)
   })
-  res.send('email sent')
 })
 
 // proxy initial timeline request
