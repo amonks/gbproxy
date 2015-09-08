@@ -72,10 +72,10 @@ var shareFacebook = function (req, res) {
   var post = require('./post_fb')
   var gif_url = req.session.gif_url
   post.post(oauth, gif_url).then(function (out) {
-    ui.alert(res, 'status posted', 'success')
+    ui.alert(res, 'Posted successfully.', 'success')
   })
   .catch(function (err) {
-    ui.alert(res, 'error posting to facebook: ' + JSON.stringify(err), 'danger')
+    ui.alert(res, 'Error posting to Facebook: ' + JSON.stringify(err), 'danger')
   })
 }
 
