@@ -7,10 +7,17 @@ require('newrelic')
 var ui = require('./ui')
 var proxy_twitter = require('./proxy_twitter')
 var email = require('./email')
+var send_twilio = require('./send_twilio')
+var postTwitter = require('./post_twitter')
+var post_fb = require('./post_fb')
+var upload_twitter = require('./upload_twitter')
 
 // create app
 var express = require('express')
 var app = express()
+
+var body_parser = require('body-parser')
+app.use(body_parser.urlencoded({extended: true}))
 
 var session = require('express-session')
 var sessionOptions = {
@@ -50,11 +57,9 @@ app.use(cors(corsOptions))
 
 var shareTwitter = function (req, res) {
   var oauth = makeTwitterOauth(req)
-  var up = require('./upload_twitter')
   var filename = req.session.tweet_id + '.mp4'
-  up.uploadURL(oauth, req.session.mp4_url, filename)
+  upload_twitter.uploadURL(oauth, req.session.mp4_url, filename)
     .then(function (media_id) {
-      var postTwitter = require('./post_twitter')
       postTwitter.post(oauth, {
         'status': req.session.text,
         'media_ids': media_id
@@ -69,9 +74,8 @@ var shareTwitter = function (req, res) {
 
 var shareFacebook = function (req, res) {
   var oauth = makeFacebookOauth(req)
-  var post = require('./post_fb')
   var gif_url = req.session.gif_url
-  post.post(oauth, gif_url).then(function (out) {
+  post_fb.post(oauth, gif_url).then(function (out) {
     ui.alert(res, 'Posted successfully.', 'success')
   })
   .catch(function (err) {
@@ -114,16 +118,29 @@ app.get('/', function (req, res) {
 
 // email gifs using mandrill
 app.post('/share/email', function (req, res) {
+  console.log('request body:', req.body)
   email.send({
-    gif_url: req.query.gif_url,
-    to_email: req.query.to_email,
-    to_name: req.query.to_name
+    gif_url: req.body.gif_url,
+    to_email: req.body.to_email,
+    to_name: req.body.to_name
   })
   .then(function () {
     res.send('sent')
   })
   .catch(function (err) {
-    res.send('error!' + err)
+    res.status(400).send('error!' + JSON.stringify(err))
+  })
+})
+
+// mms gifs using twilio
+app.post('/share/mms', function (req, res) {
+  console.log('request body:', req.body)
+  send_twilio.sendMedia(req.body.to_number, req.body.gif_url)
+  .then(function () {
+    res.send('sent')
+  })
+  .catch(function (err) {
+    res.status(400).send('error!' + JSON.stringify(err))
   })
 })
 

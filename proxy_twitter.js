@@ -18,8 +18,7 @@ var ProxyTwitter = function () {
   API.stream = t.stream(
     'statuses/filter',
     {
-      follow: process.env.USER_ID,
-      track: process.env.HASHTAG
+      follow: process.env.USER_ID
     }
   )
 
