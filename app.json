@@ -12,38 +12,38 @@
   "success_url": "/",
   "env": {
     "USER_ID": {
-      "description": "The Twitter user ID (not screen name) of the user to follow for gif tweets.",
+      "description": "The Twitter user ID (not screen name) of the user to follow for gif tweets."
     },
     "TWITTER_CONSUMER_KEY": {
-      "description": "Provided by Twitter.",
+      "description": "Provided by Twitter."
     },
     "TWITTER_CONSUMER_SECRET": {
-      "description": "Provided by Twitter.",
+      "description": "Provided by Twitter."
     },
     "TWITTER_TOKEN": {
-      "description": "Provided by Twitter.",
+      "description": "Provided by Twitter."
     },
     "TWITTER_TOKEN_SECRET": {
-      "description": "Provided by Twitter.",
+      "description": "Provided by Twitter."
     },
     "FACEBOOK_KEY": {
-      "description": "Provided by Facebook.",
+      "description": "Provided by Facebook."
     },
     "FACEBOOK_SECRET": {
-      "description": "Provided by Facebook.",
+      "description": "Provided by Facebook."
     },
     "AWS_S3_BUCKET": {
       "description": "Where gifs are stored.",
       "value": "gifs.gifbooth.co"
     },
     "AWS_ACCESS_KEY_ID": {
-      "description": "Must have access to AWS_S3_BUCKET.",
+      "description": "Must have access to AWS_S3_BUCKET."
     },
     "AWS_SECRET_ACCESS_KEY": {
-      "description": "Must have access to AWS_S3_BUCKET.",
+      "description": "Must have access to AWS_S3_BUCKET."
     },
     "MANDRILL_KEY": {
-      "description": "Provided by Mandrill.",
+      "description": "Provided by Mandrill."
     },
     "PROTOCOL": {
       "description": "Whether this proxy can be accessed by HTTP or HTTPS.",
