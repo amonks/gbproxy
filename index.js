@@ -12,6 +12,9 @@ var postTwitter = require('./post_twitter')
 var post_fb = require('./post_fb')
 var upload_twitter = require('./upload_twitter')
 
+var cache = require('./cache')
+cache.flush()
+
 // create app
 var express = require('express')
 var app = express()

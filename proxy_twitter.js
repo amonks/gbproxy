@@ -9,8 +9,7 @@ var ProxyTwitter = function () {
   })
 
   // cache
-  var Cache = require('./cache')
-  var cache = new Cache(process.env.REDIS_URL)
+  var cache = require('./cache')
 
   var API = {}
 

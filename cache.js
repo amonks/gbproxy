@@ -1,7 +1,6 @@
-module.exports = function (url) {
-
+var Cache = function () {
   // redis cache
-  var redis = require('redis').createClient(url)
+  var redis = require('redis').createClient(process.env.REDIS_URL)
   redis.on('error', function (err) {
     console.log('\n\n\nRedis Error ' + err)
   })
@@ -28,6 +27,11 @@ module.exports = function (url) {
   API.del = function (key) {
     redis.del(key)
   }
+
+  API.flush = function () {
+    redis.flushdb()
+  }
+
   API.save = function (key, data) {
     redis.set(key, JSON.stringify(data))
     // redis.expire(key, parseInt(process.env.REDIS_EXPIRE, 10) || 10)
@@ -35,3 +39,5 @@ module.exports = function (url) {
 
   return API
 }
+
+module.exports = new Cache()
