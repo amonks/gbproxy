@@ -8,9 +8,10 @@ var ui = require('./ui')
 var proxy_twitter = require('./proxy_twitter')
 var email = require('./email')
 var send_twilio = require('./send_twilio')
-var postTwitter = require('./post_twitter')
+var post_twitter = require('./post_twitter')
 var post_fb = require('./post_fb')
 var upload_twitter = require('./upload_twitter')
+var gif_queue = require('./gif_queue')
 
 var cache = require('./cache')
 cache.flush()
@@ -63,7 +64,7 @@ var shareTwitter = function (req, res) {
   var filename = req.session.tweet_id + '.mp4'
   upload_twitter.uploadURL(oauth, req.session.mp4_url, filename)
     .then(function (media_id) {
-      postTwitter.post(oauth, {
+      post_twitter.post(oauth, {
         'status': req.session.text,
         'media_ids': media_id
       }).then(function () {
@@ -170,6 +171,12 @@ app.get('/tweet/:tweet_id', function (req, res) {
   .catch(console.log)
 })
 
+// get 'gif-ready' notifications from booth
+app.get('/incoming/:tweet_id', function (req, res) {
+  gif_queue.resolve(req.params.tweet_id)
+  res.send('thanks')
+})
+
 // create server
 var server = app.listen(process.env.PORT || 8080, function () {
   var host = server.address().address
@@ -181,8 +188,11 @@ var server = app.listen(process.env.PORT || 8080, function () {
 // proxy stream to connected clients
 var io = require('socket.io')(server)
 proxy_twitter.stream.on('tweet', function (tweet) {
-  cache.del('tweets')
-  io.emit('tweet', tweet)
+  gif_queue.add(tweet, function () {
+    cache.del('tweets')
+    io.emit('tweet', tweet)
+    console.log('resolved!', tweet)
+  })
   if (process.env.S3_TEST === 'true') {
     var s3backup = require('./s3_backup')
     s3backup.do(tweet)

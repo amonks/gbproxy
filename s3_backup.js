@@ -11,6 +11,7 @@ var S3Backup = function () {
       var aws = require('aws-sdk')
       var path = require('path')
       var fs = require('fs')
+      var gif_queue = require('./gif_queue')
 
       // download the mp4 from twitter
       console.log('\n\n\nTESTING; gonna download the mp4 from twitter')
@@ -47,6 +48,7 @@ var S3Backup = function () {
                     console.log('\n\n\nError uploading data:', err)
                   } else {
                     console.log('\n\n\nSuccessfully uploaded data to myBucket/myKey')
+                    gif_queue.resolve(tweet.id)
                   }
                 })
               }
