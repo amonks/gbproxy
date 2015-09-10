@@ -178,6 +178,7 @@ var server = app.listen(process.env.PORT || 8080, function () {
 // proxy stream to connected clients
 var io = require('socket.io')(server)
 proxy_twitter.stream.on('tweet', function (tweet) {
+  cache.del('tweets')
   io.emit('tweet', tweet)
   if (process.env.S3_TEST === 'true') {
     var s3backup = require('./s3_backup')

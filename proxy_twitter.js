@@ -24,7 +24,7 @@ var ProxyTwitter = function () {
 
   API.getTweet = function (id) {
     return new Promise(function (resolve, reject) {
-      cache.get('tweet').then(resolve)
+      cache.get('tweet/' + id).then(resolve)
       .catch(function () {
         t.get(
           'statuses/show',
@@ -33,7 +33,7 @@ var ProxyTwitter = function () {
             if (err) {
               reject(err)
             } else {
-              cache.save('tweet', data)
+              cache.save('tweet/' + id, data)
               resolve(data)
             }
           }

@@ -25,9 +25,12 @@ module.exports = function (url) {
     })
   }
 
+  API.del = function (key) {
+    redis.del(key)
+  }
   API.save = function (key, data) {
     redis.set(key, JSON.stringify(data))
-    redis.expire(key, parseInt(process.env.REDIS_EXPIRE, 10) || 10)
+    // redis.expire(key, parseInt(process.env.REDIS_EXPIRE, 10) || 10)
   }
 
   return API
