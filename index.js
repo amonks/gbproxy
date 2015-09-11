@@ -122,12 +122,34 @@ app.get('/', function (req, res) {
 
 // email gifs using mandrill
 app.post('/share/email', function (req, res) {
-  console.log('request body:', req.body)
   email.send({
     gif_url: req.body.gif_url,
     to_email: req.body.to_email,
-    to_name: req.body.to_name
+    to_name: req.body.to_name,
+    event_url: req.body.event_url,
+    event_title: req.body.event_title
   })
+  .then(function () {
+    res.send('sent')
+  })
+  .catch(function (err) {
+    res.status(400).send('error!' + JSON.stringify(err))
+  })
+})
+
+// email gifs using mandrill
+app.post('/share/instagram', function (req, res) {
+  email.sendInstagram(
+    {
+      to_email: req.body.to_email,
+      event_url: req.body.event_url,
+      event_title: req.body.event_title,
+      attachment: {
+        url: req.body.attachment_url,
+        filename: req.body.attachment_filename
+      }
+    }
+  )
   .then(function () {
     res.send('sent')
   })

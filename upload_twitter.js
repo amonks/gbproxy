@@ -1,34 +1,26 @@
 var UploadTwitter = function () {
   var request = require('request')
   var fs = require('fs')
-  var del = require('del')
+  var download = require('./download')
 
   var API = {}
 
   API.uploadURL = function (oauth, url, filename) {
     return new Promise(function (resolve, reject) {
-      // first download
-      var localFileName = __dirname + '/tmp/' + filename
-      del.sync(localFileName)
-      var r = request(url)
-      r.on('error', function (err) {
-        console.log('error downloading media', err)
+      download.download(url, filename)
+      .then(function (localFileName) {
+        API.upload(oauth, localFileName)
+        .then(resolve)
       })
-      r.pipe(fs.createWriteStream(localFileName))
-        .on('finish', function () {
-          // then when done downloading, upload
-          API.upload(oauth, localFileName)
-            .then(resolve)
-            .catch(function (err) { console.log('error!', err) })
-        })
+      .catch(console.log)
     })
   }
 
   API.upload = function (oauth, path) {
     return new Promise(function (resolve, reject) {
-      var u = init(oauth, path)
-      u.then(resolve)
-      u.catch(console.log)
+      init(oauth, path)
+      .then(resolve)
+      .catch(console.log)
     })
   }
 
@@ -51,8 +43,8 @@ var UploadTwitter = function () {
           } else {
             var media_id = JSON.parse(body).media_id_string
             append(oauth, path, media_id)
-              .then(resolve)
-              .catch(console.log)
+            .then(resolve)
+            .catch(console.log)
           }
         }
       )
@@ -77,8 +69,8 @@ var UploadTwitter = function () {
             reject(err)
           } else {
             finalize(oauth, path, media_id)
-              .then(resolve)
-              .catch(console.log)
+            .then(resolve)
+            .catch(console.log)
           }
         }
       )
