@@ -1,4 +1,6 @@
 var ProxyTwitter = function () {
+  var gif_queue = require('./gif_queue')
+
   // create twitter object
   var Twitter = require('twit')
   var t = new Twitter({
@@ -14,12 +16,27 @@ var ProxyTwitter = function () {
   var API = {}
 
   // load a stream of the user's tweets
-  API.stream = t.stream(
-    'statuses/filter',
-    {
-      follow: process.env.USER_ID
-    }
-  )
+  API.stream = function (server) {
+    var io = require('socket.io')(server)
+    t.stream(
+      'statuses/filter',
+      {
+        follow: process.env.USER_ID
+      }
+    ).on('tweet', function (tweet) {
+      if (!process.env.HASHTAG || tweetHasHashtag(tweet, process.env.HASHTAG)) {
+        gif_queue.add(tweet, function () {
+          cache.del('tweets')
+          io.emit('tweet', tweet)
+          console.log('resolved!', tweet)
+        })
+        if (process.env.S3_TEST === 'true') {
+          var s3backup = require('./s3_backup')
+          s3backup.do(tweet)
+        }
+      }
+    })
+  }
 
   API.getTweet = function (id) {
     return new Promise(function (resolve, reject) {
@@ -69,12 +86,35 @@ var ProxyTwitter = function () {
             } else {
               cache.save(key, data)
               // send it off
+              if (process.env.HASHTAG) {
+                data = filterTweets(data, process.env.HASHTAG)
+              }
               resolve(data)
             }
           }
         )
       })
     })
+  }
+
+  var tweetHasHashtag = function (tweet, hashtag) {
+    for (var h of tweet.entities.hashtags) {
+      if (h.text === hashtag) {
+        return true
+      } else {
+        return false
+      }
+    }
+  }
+
+  var filterTweets = function (tweets, hashtag) {
+    var out = []
+    for (var tweet of tweets) {
+      if (tweetHasHashtag(tweet, hashtag)) {
+        out.push(tweet)
+      }
+    }
+    return out
   }
 
   return API
