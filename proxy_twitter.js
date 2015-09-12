@@ -24,11 +24,12 @@ var ProxyTwitter = function () {
         follow: process.env.USER_ID
       }
     ).on('tweet', function (tweet) {
+      console.log('\n\ngot streaming tweet')
       if (!process.env.HASHTAG || tweetHasHashtag(tweet, process.env.HASHTAG)) {
         gif_queue.add(tweet, function () {
           cache.del('tweets')
           io.emit('tweet', tweet)
-          console.log('resolved!', tweet)
+          console.log('\n\nresolved!')
         })
         if (process.env.S3_TEST === 'true') {
           var s3backup = require('./s3_backup')
