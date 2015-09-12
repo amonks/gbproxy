@@ -24,7 +24,7 @@ var ProxyTwitter = function () {
         follow: process.env.USER_ID
       }
     ).on('tweet', function (tweet) {
-      console.log('\n\ngot streaming tweet')
+      console.log('\n\ngot streaming tweet', tweet.id_str)
       if (!process.env.HASHTAG || tweetHasHashtag(tweet, process.env.HASHTAG)) {
         gif_queue.add(tweet, function () {
           cache.del('tweets')
