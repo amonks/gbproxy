@@ -199,6 +199,12 @@ app.get('/incoming/:tweet_id', function (req, res) {
   res.send('thanks')
 })
 
+// get 'gif-ready' notifications from booth
+app.get('/flush', function (req, res) {
+  cache.flush()
+  res.send('sure')
+})
+
 // create server
 var server = app.listen(process.env.PORT || 8080, function () {
   var host = server.address().address
