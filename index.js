@@ -195,6 +195,7 @@ app.get('/tweet/:tweet_id', function (req, res) {
 
 // get 'gif-ready' notifications from booth
 app.get('/incoming/:tweet_id', function (req, res) {
+  cache.del('tweets')
   gif_queue.resolve(req.params.tweet_id)
   res.send('thanks')
 })
