@@ -4,7 +4,7 @@ var GifQueue = function () {
   var queue = []
 
   API.add = function (tweet, cb) {
-    queue.push({id: tweet.id, cb: cb})
+    queue.push({id: tweet.id_str, cb: cb})
   }
 
   API.resolve = function (id) {
